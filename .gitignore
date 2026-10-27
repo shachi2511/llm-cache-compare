@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+results/compare/spend_ledger.json
+results/compare/.*ledger.json
+results/compare/*/.*_ledger.json
+*.tmp
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+*.egg-info/
+build/

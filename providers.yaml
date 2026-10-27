@@ -1,0 +1,80 @@
+# Providers compared by `python -m agentload.compare`.
+#
+# Each provider's cheapest current text model, called through its own native API so prompt
+# caching works the way that provider intends. Prices are USD per 1M tokens, taken from each
+# provider's pricing page on 2026-10-22 -- re-check before citing. Costs in the logs are
+# computed from the token counts each API reports, using these prices.
+#
+# Keys are read from the environment or from a .env file in the repo root (git-ignored).
+# Add a provider by copying a block; set `enabled: false` to skip one.
+
+providers:
+  - name: openai
+    label: OpenAI
+    enabled: true
+    api: openai_responses            # Responses API; full history sent each turn (store: false)
+    base_url: https://api.openai.com/v1
+    key_env: OPENAI_API_KEY
+    model: gpt-6-luna
+    caching: automatic (breakpoint at the end of the latest user message; 30-minute TTL)
+    options:
+      reasoning: {effort: none}      # keep reasoning off so every model does the same job
+    # GPT-5.6+: cache writes billed at 1.25x input (30m TTL), reads at 0.1x (prompt-caching guide)
+    prices: {input: 0.10, cached_read: 0.01, cache_write: 0.125, output: 0.50}
+    price_source: https://developers.openai.com/api/docs/pricing
+
+  - name: anthropic
+    label: Anthropic
+    enabled: true
+    api: anthropic                   # native Messages API (the OpenAI-compatible layer has no caching)
+    base_url: https://api.anthropic.com
+    key_env: ANTHROPIC_API_KEY
+    model: claude-haiku-5-5
+    caching: opt-in (top-level cache_control, 5-minute TTL; prefix >= 512 tokens)
+    options:
+      cache_control: {type: ephemeral}
+      thinking: {type: disabled}     # Haiku 5.5 thinks by default; off, like OpenAI's effort: none
+    prices: {input: 0.10, cached_read: 0.01, cache_write: 0.125, output: 0.50}
+    # Haiku 5.5 bills the whole request at a higher rate once the prompt passes 100K tokens.
+    long_context: {threshold_tokens: 100000,
+                   prices: {input: 0.50, cached_read: 0.05, cache_write: 0.625, output: 2.50}}
+    price_source: https://platform.claude.com/docs/en/about-claude/pricing
+
+  - name: gemini
+    label: Google Gemini
+    enabled: true
+    api: gemini                      # native generateContent API (reports cached tokens reliably)
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    key_env: GEMINI_API_KEY
+    model: gemini-3.1-flash-lite
+    caching: implicit (automatic, best effort)
+    min_interval_s: 4                # free tier allows ~15 requests/min; remove if billing is on
+    options:
+      generationConfig: {thinkingConfig: {thinkingLevel: low}}  # Gemini 3 can't fully disable thinking
+    prices: {input: 0.25, cached_read: 0.025, cache_write: 0.25, output: 1.50}
+    price_source: https://ai.google.dev/pricing
+
+  - name: groq
+    label: Groq
+    enabled: false                   # Groq now requires a $20 minimum top-up
+    api: openai_chat                 # OpenAI-compatible Chat Completions
+    base_url: https://api.groq.com/openai/v1
+    key_env: GROQ_API_KEY
+    model: openai/gpt-oss-20b
+    caching: automatic (50% off cached input)
+    options:
+      reasoning_effort: low          # gpt-oss always reasons; "low" is its lightest setting
+    prices: {input: 0.075, cached_read: 0.037, cache_write: 0.075, output: 0.30}
+    price_source: https://console.groq.com/docs/model/openai/gpt-oss-20b
+
+  - name: deepseek
+    label: DeepSeek
+    enabled: false                   # no key yet; flip to true and add DEEPSEEK_API_KEY to .env
+    api: openai_chat
+    base_url: https://api.deepseek.com/v1
+    key_env: DEEPSEEK_API_KEY
+    model: deepseek-chat
+    caching: automatic (disk cache)
+    options: {}
+    prices: {input: 0.14, cached_read: 0.014, cache_write: 0.14, output: 0.28}
+    price_source: https://platform.deepseek.com/api-docs/quick_start/pricing

@@ -1,0 +1,166 @@
+{
+  "run_id": "20261022-014912-compare-6b75b6",
+  "started_at": 1792651752.479914,
+  "quick": false,
+  "config": {
+    "name": "compare",
+    "description": "The same agent workloads replayed against every enabled provider in providers.yaml. loop_healthy: 50-turn coding-agent loop with a stable system prompt (cache should work). loop_bug:     the identical loop with a timestamp at the end of the system prompt, a common\n              agent bug that changes the prompt prefix every turn and defeats caching.\nlong_context: one big document, sent cold and then warm, at several sizes (TTFT, cache). concurrency:  1 / 4 / 8 parallel streams writing ~400 words each (tokens per second).\n",
+    "budget": {
+      "total_usd": 10.0,
+      "per_provider_usd": 3.0
+    },
+    "loop": {
+      "reps": 3,
+      "turns": 50,
+      "tool_tokens": [
+        800,
+        1600
+      ],
+      "max_tokens": 400
+    },
+    "long_context": {
+      "reps": 3,
+      "sizes": [
+        8000,
+        32000,
+        64000
+      ],
+      "warm_repeats": 2,
+      "max_tokens": 300
+    },
+    "concurrency": {
+      "reps": 2,
+      "levels": [
+        1,
+        4,
+        8
+      ],
+      "prompt_tokens": 1000,
+      "max_tokens": 1200
+    },
+    "quick": {
+      "loop": {
+        "reps": 1,
+        "turns": 4,
+        "tool_tokens": [
+          600,
+          700
+        ]
+      },
+      "long_context": {
+        "reps": 1,
+        "sizes": [
+          2000
+        ],
+        "warm_repeats": 1
+      },
+      "concurrency": {
+        "reps": 1,
+        "levels": [
+          1,
+          2
+        ],
+        "prompt_tokens": 300,
+        "max_tokens": 200
+      }
+    }
+  },
+  "providers": [
+    {
+      "name": "openai",
+      "label": "OpenAI",
+      "api": "openai_responses",
+      "base_url": "https://api.openai.com/v1",
+      "key_env": "OPENAI_API_KEY",
+      "model": "gpt-6-luna",
+      "enabled": true,
+      "caching": "automatic (breakpoint at the end of the latest user message; 30-minute TTL)",
+      "options": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "long_context_threshold": null,
+      "long_context_prices": null,
+      "price_source": "https://developers.openai.com/api/docs/pricing",
+      "min_interval_s": 0.0,
+      "prices": {
+        "input": 0.1,
+        "cached_read": 0.01,
+        "cache_write": 0.125,
+        "output": 0.5
+      }
+    },
+    {
+      "name": "anthropic",
+      "label": "Anthropic",
+      "api": "anthropic",
+      "base_url": "https://api.anthropic.com",
+      "key_env": "ANTHROPIC_API_KEY",
+      "model": "claude-haiku-5-5",
+      "enabled": true,
+      "caching": "opt-in (top-level cache_control, 5-minute TTL; prefix >= 512 tokens)",
+      "options": {
+        "cache_control": {
+          "type": "ephemeral"
+        },
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "long_context_threshold": 100000,
+      "long_context_prices": {
+        "input": 0.5,
+        "cached_read": 0.05,
+        "cache_write": 0.625,
+        "output": 2.5
+      },
+      "price_source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "min_interval_s": 0.0,
+      "prices": {
+        "input": 0.1,
+        "cached_read": 0.01,
+        "cache_write": 0.125,
+        "output": 0.5
+      }
+    },
+    {
+      "name": "gemini",
+      "label": "Google Gemini",
+      "api": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "key_env": "GEMINI_API_KEY",
+      "model": "gemini-3.1-flash-lite",
+      "enabled": true,
+      "caching": "implicit (automatic, best effort)",
+      "options": {
+        "generationConfig": {
+          "thinkingConfig": {
+            "thinkingLevel": "low"
+          }
+        }
+      },
+      "long_context_threshold": null,
+      "long_context_prices": null,
+      "price_source": "https://ai.google.dev/pricing",
+      "min_interval_s": 4.0,
+      "prices": {
+        "input": 0.25,
+        "cached_read": 0.025,
+        "cache_write": 0.25,
+        "output": 1.5
+      }
+    }
+  ],
+  "finished_at": 1792659811.117561,
+  "status": {
+    "openai": "ok",
+    "anthropic": "ok",
+    "gemini": "aborted"
+  },
+  "spent": {
+    "openai": 0.710138,
+    "anthropic": 1.035436,
+    "gemini": 2.252204
+  }
+}

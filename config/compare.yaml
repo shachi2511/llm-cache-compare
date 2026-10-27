@@ -1,0 +1,36 @@
+name: compare
+description: >
+  The same agent workloads replayed against every enabled provider in providers.yaml.
+  loop_healthy: 50-turn coding-agent loop with a stable system prompt (cache should work).
+  loop_bug:     the identical loop with a timestamp at the end of the system prompt, a common
+                agent bug that changes the prompt prefix every turn and defeats caching.
+  long_context: one big document, sent cold and then warm, at several sizes (TTFT, cache).
+  concurrency:  1 / 4 / 8 parallel streams writing ~400 words each (tokens per second).
+
+budget:
+  total_usd: 10.0          # lifetime cap for all compare runs (ledger: results/compare/)
+  per_provider_usd: 3.0    # cap per provider per run
+
+loop:
+  reps: 3
+  turns: 50
+  tool_tokens: [800, 1600] # tokens of synthetic tool output appended each turn
+  max_tokens: 400
+
+long_context:
+  reps: 3
+  sizes: [8000, 32000, 64000]   # kept under 100K: Haiku 5.5 switches to a pricier tier above it
+  warm_repeats: 2
+  max_tokens: 300
+
+concurrency:
+  reps: 2
+  levels: [1, 4, 8]             # never more than 8 parallel streams
+  prompt_tokens: 1000
+  max_tokens: 1200
+
+# --quick: a tiny version of everything, for checking the pipeline end to end.
+quick:
+  loop: {reps: 1, turns: 4, tool_tokens: [600, 700]}
+  long_context: {reps: 1, sizes: [2000], warm_repeats: 1}
+  concurrency: {reps: 1, levels: [1, 2], prompt_tokens: 300, max_tokens: 200}

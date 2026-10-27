@@ -1,0 +1,29 @@
+# Runs on every push. Never calls a real API, never needs a key, never spends money:
+# every test runs against tests/mock_providers.py (fakes of all four API formats).
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: python -m ruff check .
+      - run: python -m pytest -q
+      - name: Rebuild the summary from the published logs
+        run: python -m llm_cache_compare.report results/compare/* --out /tmp/summary.json
+      - name: No API keys in the repo
+        run: |
+          if grep -rnE "sk-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}" --exclude-dir=.git .; then
+            echo "Possible API key committed"; exit 1
+          fi
